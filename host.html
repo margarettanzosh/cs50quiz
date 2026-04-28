@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS50 Quiz — Host</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #c0392b;
+    --dark: #0a0a0a;
+    --card: #141414;
+    --border: #2a2a2a;
+    --text: #f0f0f0;
+    --muted: #666;
+    --green: #27ae60;
+    --yellow: #f39c12;
+    --blue: #2980b9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--dark); color: var(--text); font-family: 'Space Mono', monospace; min-height: 100vh; }
+
+  header {
+    background: var(--red);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; letter-spacing: 3px; }
+  header .role { font-size: 0.7rem; letter-spacing: 4px; opacity: 0.8; text-transform: uppercase; }
+
+  .main { padding: 32px; max-width: 1100px; margin: 0 auto; }
+
+  /* Lobby */
+  #lobby { text-align: center; padding: 60px 20px; }
+  #lobby h2 { font-family: 'Bebas Neue', sans-serif; font-size: 3rem; letter-spacing: 4px; margin-bottom: 8px; }
+  .join-code { font-family: 'Bebas Neue', sans-serif; font-size: 6rem; color: var(--red); letter-spacing: 8px; margin: 20px 0; line-height: 1; }
+  .join-url { color: var(--muted); font-size: 0.8rem; margin-bottom: 40px; word-break: break-all; }
+  .join-url span { color: var(--text); }
+
+  .players-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 30px 0; min-height: 60px; }
+  .player-chip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 8px 18px;
+    border-radius: 40px;
+    font-size: 0.85rem;
+    animation: popIn 0.3s ease;
+  }
+  @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .btn {
+    background: var(--red);
+    color: white;
+    border: none;
+    padding: 16px 40px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 3px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.secondary { background: var(--border); }
+
+  /* Game screen */
+  #game { display: none; }
+  .progress-bar-wrap { background: var(--border); height: 6px; border-radius: 3px; margin-bottom: 32px; }
+  .progress-bar { background: var(--red); height: 6px; border-radius: 3px; transition: width 0.4s; }
+
+  .q-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .q-num { font-size: 0.75rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+  .q-diff { font-size: 0.7rem; letter-spacing: 2px; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; }
+  .diff-easy { background: #1a3a2a; color: #27ae60; }
+  .diff-medium { background: #3a2a1a; color: #f39c12; }
+  .diff-hard { background: #3a1a1a; color: #e74c3c; }
+  .diff-fun { background: #1a2a3a; color: #3498db; }
+
+  .question-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+  .question-text { font-size: 1.2rem; line-height: 1.6; margin-bottom: 28px; }
+
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .option {
+    background: var(--dark);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+    font-family: 'Space Mono', monospace;
+  }
+  .option-letter {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    color: var(--red);
+    min-width: 20px;
+    line-height: 1;
+  }
+  .option.correct { border-color: var(--green); background: #0d2a1a; }
+  .option.wrong { border-color: var(--red); background: #2a0d0d; opacity: 0.5; }
+
+  .timer-row { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+  .timer {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.5rem;
+    color: var(--red);
+    line-height: 1;
+    min-width: 60px;
+  }
+  .timer.warning { color: var(--yellow); animation: pulse 0.5s infinite alternate; }
+  .timer.urgent { color: var(--red); }
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+
+  .timer-bar-wrap { flex: 1; background: var(--border); height: 8px; border-radius: 4px; }
+  .timer-bar { height: 8px; border-radius: 4px; background: var(--green); transition: width 1s linear, background 1s; }
+
+  /* Answers panel */
+  .answers-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .answers-panel h3 { font-size: 0.7rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 14px; }
+  .answer-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .answer-chip {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    border: 1px solid var(--border);
+    background: var(--dark);
+    transition: all 0.3s;
+  }
+  .answer-chip.answered { border-color: var(--green); background: #0d2a1a; color: var(--green); }
+
+  .host-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  /* Leaderboard */
+  #leaderboard { display: none; }
+  .lb-title { font-family: 'Bebas Neue', sans-serif; font-size: 3rem; letter-spacing: 4px; text-align: center; margin-bottom: 32px; }
+  .lb-list { max-width: 600px; margin: 0 auto; }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 24px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 10px;
+    animation: slideIn 0.4s ease both;
+  }
+  .lb-row:nth-child(1) { border-color: gold; }
+  .lb-row:nth-child(2) { border-color: silver; }
+  .lb-row:nth-child(3) { border-color: #cd7f32; }
+  @keyframes slideIn { from { transform: translateX(-30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  .lb-rank { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--muted); min-width: 40px; }
+  .lb-name { flex: 1; font-size: 0.95rem; }
+  .lb-score { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; color: var(--red); }
+
+  .answer-reveal {
+    background: var(--card);
+    border: 1px solid var(--green);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: none;
+  }
+  .answer-reveal .label { font-size: 0.7rem; letter-spacing: 3px; color: var(--green); text-transform: uppercase; margin-bottom: 8px; }
+  .answer-reveal .answer-text { font-size: 1rem; line-height: 1.5; }
+
+  .stat-row { display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 16px 24px; flex: 1; min-width: 120px; }
+  .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; color: var(--red); }
+  .stat-label { font-size: 0.7rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="role">Host Dashboard</div>
+    <h1>CS50 QUIZ</h1>
+  </div>
+  <div id="header-info" style="text-align:right; font-size:0.8rem; color:rgba(255,255,255,0.7)"></div>
+</header>
+
+<div class="main">
+
+  <!-- LOBBY -->
+  <div id="lobby">
+    <h2>WAITING FOR PLAYERS</h2>
+    <p style="color:var(--muted); font-size:0.8rem; letter-spacing:2px; margin-bottom:8px;">STUDENTS JOIN AT</p>
+    <div class="join-url" id="join-url-display">Loading...</div>
+    <p style="color:var(--muted); font-size:0.8rem; letter-spacing:2px; margin-bottom:4px;">GAME PIN</p>
+    <div class="join-code" id="pin-display">----</div>
+    <div class="players-grid" id="players-grid"></div>
+    <p style="color:var(--muted); font-size:0.8rem; margin-bottom:24px;"><span id="player-count">0</span> players joined</p>
+    <button class="btn" id="start-btn" onclick="startGame()">START GAME</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <div class="q-meta">
+      <span class="q-num" id="q-num">Question 1 of 35</span>
+      <span class="q-diff" id="q-diff"></span>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="stat-val" id="stat-answered">0</div><div class="stat-label">Answered</div></div>
+      <div class="stat"><div class="stat-val" id="stat-players">0</div><div class="stat-label">Players</div></div>
+      <div class="stat"><div class="stat-val" id="stat-correct">—</div><div class="stat-label">Got it Right</div></div>
+    </div>
+
+    <div class="timer-row">
+      <div class="timer" id="timer">20</div>
+      <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+    </div>
+
+    <div class="question-box">
+      <div class="question-text" id="question-text"></div>
+      <div class="options-grid" id="options-grid"></div>
+    </div>
+
+    <div class="answer-reveal" id="answer-reveal">
+      <div class="label">✓ Correct Answer</div>
+      <div class="answer-text" id="answer-reveal-text"></div>
+    </div>
+
+    <div class="answers-panel">
+      <h3>Player Responses</h3>
+      <div class="answer-list" id="answer-list"></div>
+    </div>
+
+    <div class="host-controls">
+      <button class="btn" id="reveal-btn" onclick="revealAnswer()">REVEAL ANSWER</button>
+      <button class="btn" id="next-btn" onclick="nextQuestion()" style="display:none">NEXT QUESTION →</button>
+      <button class="btn secondary" onclick="showLeaderboard()">LEADERBOARD</button>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div id="leaderboard">
+    <div class="lb-title" id="lb-title">LEADERBOARD</div>
+    <div class="lb-list" id="lb-list"></div>
+    <div style="text-align:center; margin-top:32px; display:flex; gap:12px; justify-content:center;">
+      <button class="btn" id="resume-btn" onclick="resumeGame()">RESUME GAME</button>
+      <button class="btn secondary" onclick="endGame()">END GAME</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, update, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD8NfUr1f0Q7DezcmqC-X29KSLj21R3F5Q",
+  authDomain: "cs50-quiz-2ef04.firebaseapp.com",
+  databaseURL: "https://cs50-quiz-2ef04-default-rtdb.firebaseio.com",
+  projectId: "cs50-quiz-2ef04",
+  storageBucket: "cs50-quiz-2ef04.firebasestorage.app",
+  messagingSenderId: "182771584867",
+  appId: "1:182771584867:web:a3035fec9be32401358d56"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ── Questions ──────────────────────────────────────────────────────────────
+const QUESTIONS = [
+  // EASY
+  { diff: "easy", q: "Which of these languages is used for database querying?", options: ["Python","SQL","C","JavaScript"], answer: 1 },
+  { diff: "easy", q: "What programming language is the building block for most modern languages?", options: ["Python","JavaScript","SQL","C"], answer: 3 },
+  { diff: "easy", q: "What does the || operator mean?", options: ["AND","OR","IF ELSE","EQUALS"], answer: 1 },
+  { diff: "easy", q: "How many bits are in an integer (most systems)?", options: ["32","4","64","16"], answer: 0 },
+  { diff: "easy", q: "Which of the following is NOT a programming language?", options: ["C","Python","JavaScript","HTML"], answer: 3 },
+  { diff: "easy", q: "What conditional is used to evaluate equality in C?", options: ["=","<>","==","||"], answer: 2 },
+  { diff: "easy", q: "What is the purpose of a loop in programming?", options: ["To store data","To repeat a block of code multiple times","To define a function","To stop a program"], answer: 1 },
+  { diff: "easy", q: "In Python, what type of data is \"Hello\"?", options: ["Integer","Boolean","String","Float"], answer: 2 },
+  { diff: "easy", q: "What does malloc do in C?", options: ["Frees memory","Allocates memory dynamically","Copies memory","Deletes variables"], answer: 1 },
+  { diff: "easy", q: "What is the purpose of JavaScript in a webpage?", options: ["To style the page","To structure the page","To store data","To add interactivity to the page"], answer: 3 },
+  { diff: "easy", q: "Which line of code is regularly seen when coding in C?", options: ["int main yuck","int main (void)","main int (void)","void main (int)"], answer: 1 },
+  { diff: "easy", q: "Which of the following languages uses % to represent the modulus operator?", options: ["C","Python","JavaScript","All of the above"], answer: 3 },
+  { diff: "easy", q: "What does HTML stand for?", options: ["Hyperlinks and Text Markup Language","HyperText Markup Language","Home Tool Markup Language","HyperText Machine Language"], answer: 1 },
+  { diff: "easy", q: "Which of the following SQL clauses is used to filter rows returned by a query?", options: ["ORDER BY","WHERE","GROUP BY","HAVING"], answer: 1 },
+  { diff: "easy", q: "Which of the following is the correct CSS syntax to change the background color of a webpage body to black?", options: ["body {background-color: black;}","body {color: black;}","<body style=\"background: black;\">","background-color: black;"], answer: 0 },
+  { diff: "easy", q: "What does DNS do?", options: ["It styles web pages","It maps domain names to IP addresses","It stores passwords","It compiles C code"], answer: 1 },
+  { diff: "easy", q: "How many unique values can a single byte represent?", options: ["256","255","8","1000"], answer: 0 },
+  { diff: "easy", q: "In which programming language can you use pointers and memory management functions like malloc() and calloc()?", options: ["C","Python","SQL","HTML/CSS/JavaScript"], answer: 0 },
+
+  // MEDIUM
+  { diff: "medium", q: "Which language gives the programmer the most control over memory allocation?", options: ["C","Python","SQL","JavaScript"], answer: 0 },
+  { diff: "medium", q: "In HTML, what is the primary purpose of the <head> section?", options: ["To display visible content","To store metadata and links to stylesheets or scripts","To create navigation menus","To write JavaScript functions"], answer: 1 },
+  { diff: "medium", q: "What is one advantage arrays have over linked lists?", options: ["Easier to add/remove elements","Easier to access an element at an arbitrary position","Easier to resize","Arrays and linked lists are the same"], answer: 1 },
+  { diff: "medium", q: "In SQL, what is the main difference between WHERE and HAVING?", options: ["WHERE filters rows before grouping; HAVING filters groups after aggregation","WHERE is only used with JOINs; HAVING only with SELECT","WHERE filters aggregated results; HAVING filters individual rows","There is no difference"], answer: 0 },
+  { diff: "medium", q: "Why can a memory leak become serious in a long-running program?", options: ["It creates an infinite loop that crashes the computer","Unused allocated memory is not released, reducing available memory over time","It causes variables to become constants","It immediately doubles available memory"], answer: 1 },
+  { diff: "medium", q: "When seeding a hash function, which number from the list is the best seed and why?", options: ["25","97 — it's a prime number","48","69"], answer: 1 },
+  { diff: "medium", q: "What happens if you forget to free memory allocated with malloc in C?", options: ["It can cause a memory leak, using more memory over time","The program will not compile","The program automatically frees it at end of each function","It will immediately crash"], answer: 0 },
+  { diff: "medium", q: "Which line would create a numbered list in HTML?", options: ["<ul><li>text</li></ul>","<al><li>text</li></al>","<ol><li>text</li></ol>","<href><a>text</a></href>"], answer: 2 },
+  { diff: "medium", q: "What is the primary difference between compiled and interpreted languages?", options: ["Compiled languages execute directly with no translation","Compiled languages are translated into machine code before execution; interpreted languages are read and executed at runtime","Compiled languages are always slower","Both require an interpreter"], answer: 1 },
+  { diff: "medium", q: "This hexadecimal value #DC143C represents primarily what color?", options: ["Blue","Red","Green","Other"], answer: 1 },
+  { diff: "medium", q: "What is the time complexity of binary search?", options: ["O(n)","O(log n)","O(n log n)","O(1)"], answer: 1 },
+  { diff: "medium", q: "Which data structure operates on a Last-In, First-Out (LIFO) principle?", options: ["Queue","Hash Table","Stack","Linked List"], answer: 2 },
+  { diff: "medium", q: "In C, what is the correct way to dynamically allocate memory for an array of 8 integers?", options: ["int arr = malloc(8);","int *arr = malloc(8 * sizeof(int));","int arr[8] = malloc(8);","int *arr = alloc(8, int);"], answer: 1 },
+  { diff: "medium", q: "Why is HTTPS more secure than HTTP?", options: ["It uses bigger files","It removes domain names","It adds encryption to communication between client and server","It disables routers"], answer: 2 },
+  { diff: "medium", q: "In which data structure is it possible to achieve O(1) access time?", options: ["Linked list","Array"], answer: 1 },
+
+  // HARD
+  { diff: "hard", q: "What is the consequence of not calling free() after manually allocating memory in C?", options: ["Segmentation fault","Integer Overflow","Stack Overflow","Memory Leak"], answer: 3 },
+  { diff: "hard", q: "In SQL, what is the main difference between a WHERE clause and a HAVING clause?", options: ["WHERE filters rows before grouping; HAVING filters after aggregation","WHERE is used only with JOINs","WHERE filters aggregated results","There is no difference"], answer: 0 },
+  { diff: "hard", q: "Which of these lines of C code is formatted/syntactically correct?", options: ["for(int i=1; i<args; i++){printf(\"%c\", topper(args[I][0])}","for(int i=1; i<args; i++){print(\"%c\", topper(args[I][0]);}","for(int i=1; i<args; i++){printf(\"%c\", topper(args[I][0]);","for(int i=1; i<argc; i++){printf(\"%c\", topper(args[I][0]);}"], answer: 3 },
+  { diff: "hard", q: "How is strlen() actually implemented in C?", options: ["Loops through the string looking for \\0 while counting","Divides total memory by sizeof(char)","Counts total bytes pointed to by char* minus '\\0'","Returns a built-in length attribute of char*"], answer: 0 },
+  { diff: "hard", q: "What is the Big O of searching in an unbalanced binary search tree?", options: ["O(n)","O(log n)","O(n log n)","O(n²)"], answer: 0 },
+  { diff: "hard", q: "What is the result of this C code?\nint *x;\n*x = 10;\nprintf(\"%i\", *x);", options: ["10","Null","Garbage Value","Segmentation Fault"], answer: 3 },
+  { diff: "hard", q: "In C, what is the key difference between char *s = \"hello\"; and char s[] = \"hello\";?", options: ["There is no difference","The first creates a pointer to a string literal; the second creates a modifiable array","The first stores the string on the heap; the second on the stack","The second cannot be used as a string"], answer: 1 },
+  { diff: "hard", q: "What is the correct sequence of steps in the C compiling process?", options: ["preprocessing → assembling → linking → compiling","compiling → linking → preprocessing → assembling","preprocessing → compiling → assembling → linking","compiling → assembling → preprocessing → linking"], answer: 2 },
+  { diff: "hard", q: "In what way does merge sort apply recursion?", options: ["Repeatedly swaps adjacent elements","Implements a loop reducing list size by one each time","Searches for the smallest element repeatedly","Repeatedly divides the list in half, recursively sorts each half, then merges"], answer: 3 },
+  { diff: "hard", q: "How would you correctly allocate memory to copy a string in C?", options: ["malloc(strlen(string))","malloc(sizeof(string))","malloc(strlen(string) + 1)","malloc(sizeof(char) * strlen(string))"], answer: 2 },
+  { diff: "hard", q: "After this C code runs, what are the values of x and y?\nint x=10; int y=20;\nint *p=&x; int *q=&y;\np=q; *p=50;", options: ["x=10, y=50","x=50, y=20","x=50, y=50","x=10, y=20"], answer: 0 },
+  { diff: "hard", q: "Which sorting algorithm would be fastest on a worst-case array of exactly 2 elements?", options: ["Bubble Sort O(n²)","Selection Sort O(n²)","Merge Sort O(n log n)","None — all are equivalent"], answer: 0 },
+  { diff: "hard", q: "What does a 301 status code mean?", options: ["The page was not found","The server had an internal error","The resource has permanently moved","The request was unauthorized"], answer: 2 },
+  { diff: "hard", q: "In C, what does the & operator do when placed before a variable name (e.g., &x)?", options: ["Returns the value stored in the variable","Returns the memory address of the variable","Allocates new memory for the variable","Dereferences a pointer"], answer: 1 },
+  { diff: "hard", q: "Why do computers primarily use 0 and 1 instead of other pairs to represent data?", options: ["One byte is defined as 8 bits so computers must use 0 and 1","Each transistor permanently stores either a 0 or a 1","Electronic hardware can reliably distinguish two stable signal states","Arithmetic operations are most efficient with 0 and 1"], answer: 2 },
+
+  // FUN
+  { diff: "fun", q: "How do you debug?", options: ["Consult your rubber duck debugger friend","A flyswatter","Hire a frog","Stare at your code for hours"], answer: -1, note: "ALL OF THE ABOVE are correct!" },
+  { diff: "fun", q: "What is the animal mascot of CS50?", options: ["A bird","Godzilla","A duck","A Labubu"], answer: 2 },
+  { diff: "fun", q: "What does this binary mean?\n01001110 01100101 01110110 01100101 01110010 00100000 01100111 01101111 01101110 01101110 01100001 00100000 01100111 01101001 01110110 01100101 00100000 01111001 01101111 01110101 00100000 01110101 01110000", options: ["Never gonna give you up","Never gonna let you down","Never gonna say goodbye","Never gonna tell a lie and hurt you"], answer: 0 },
+  { diff: "fun", q: "What is the official name of the CS50 rubber duck debugger?", options: ["ddb","Quack50","Rubber Malan","DebugDuck"], answer: 0 },
+  { diff: "fun", q: "In a web page, what would happen if you add a JS event listener to a button that triggers an alert saying \"You found the secret!\" when clicked?", options: ["The page will crash","The button becomes a text field","Clicking the button shows a pop-up with \"You found the secret!\"","The browser redirects to a new website"], answer: 2 },
+  { diff: "fun", q: "Why is Harvard's CS course named CS50?", options: ["The numbers 51, 25, 35, 100 were too boring","The course started in 1950 with 50 courses","Randomly assigned by the University","None of the above — Harvard reserves the 50s for intro courses open to all students"], answer: 3 },
+  { diff: "fun", q: "How many bands does Dr. Malan wear on his wrist?", options: ["0","1","2","3 (including his watch)"], answer: 3 },
+  { diff: "fun", q: "Which response code in Lecture 8 was the joke status code?", options: ["200","301","404","418"], answer: 3 },
+  { diff: "fun", q: "A CS50 student finishes Week 7 and looks back at their Week 0 Scratch project. The Scratch 'forever' block most closely resembles which C construct?", options: ["A for loop counting from 0 to 9","A while(true) infinite loop","A do-while loop that runs exactly once","A recursive function that calls itself"], answer: 1 },
+  { diff: "fun", q: "Which CS50 topic is most likely to make students question their life choices at 2 AM?", options: ["Scratch","HTML","Pointers in C","Python"], answer: 2 },
+  { diff: "fun", q: "In the world of programming, what is the primary use for a rubber duck?", options: ["Throw at a coworker who introduces a critical bug","Explain your code to it line-by-line to figure out why it isn't working","Represent a 'padding' byte when teaching memory alignment","Float in server room cooling tanks to monitor water levels"], answer: 1 },
+  { diff: "fun", q: "You have been staring at your code for 20 minutes and it's not working. You change one tiny thing and it suddenly works. Why?", options: ["The computer reset itself internally","The code fixed itself","You got very lucky","You discovered the bug and fixed it"], answer: 3 },
+  { diff: "fun", q: "Which CS50 programming language is used in the greatest number of weeks?", options: ["Scratch","C","Python","SQL"], answer: 1 },
+];
+
+// ── State ──────────────────────────────────────────────────────────────────
+let gamePin = "";
+let gameRef;
+let currentQ = 0;
+let timerInterval = null;
+let timeLeft = 20;
+let revealed = false;
+let players = {};
+let answers = {};
+const TIMER_SECS = 20;
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+  gamePin = Math.floor(1000 + Math.random() * 9000).toString();
+  gameRef = ref(db, `games/${gamePin}`);
+
+  const playerUrl = `${location.origin}${location.pathname.replace('host.html','player.html')}?pin=${gamePin}`;
+  document.getElementById('pin-display').textContent = gamePin;
+  document.getElementById('join-url-display').innerHTML = `<span>${playerUrl}</span>`;
+  document.getElementById('header-info').innerHTML = `PIN: <strong>${gamePin}</strong>`;
+
+  await set(gameRef, {
+    status: "lobby",
+    currentQ: 0,
+    pin: gamePin,
+    playerUrl,
+    questions: QUESTIONS.map(({q, options, diff}) => ({q, options, diff}))
+  });
+
+  // Listen for players
+  onValue(ref(db, `games/${gamePin}/players`), snap => {
+    players = snap.val() || {};
+    renderPlayers();
+  });
+
+  // Listen for answers on current question
+  listenAnswers();
+}
+
+function renderPlayers() {
+  const grid = document.getElementById('players-grid');
+  const names = Object.values(players).map(p => p.name);
+  grid.innerHTML = names.map(n => `<div class="player-chip">${n}</div>`).join('');
+  document.getElementById('player-count').textContent = names.length;
+  document.getElementById('stat-players').textContent = names.length;
+}
+
+function listenAnswers() {
+  onValue(ref(db, `games/${gamePin}/answers/${currentQ}`), snap => {
+    answers = snap.val() || {};
+    renderAnswers();
+  });
+}
+
+function renderAnswers() {
+  const list = document.getElementById('answer-list');
+  const playerIds = Object.keys(players);
+  list.innerHTML = playerIds.map(id => {
+    const name = players[id]?.name || id;
+    const hasAnswered = answers[id] !== undefined;
+    return `<div class="answer-chip ${hasAnswered ? 'answered' : ''}">${name}</div>`;
+  }).join('');
+  const count = Object.keys(answers).length;
+  document.getElementById('stat-answered').textContent = count;
+}
+
+// ── Game flow ──────────────────────────────────────────────────────────────
+window.startGame = async function() {
+  await update(gameRef, { status: "playing", currentQ: 0 });
+  document.getElementById('lobby').style.display = 'none';
+  document.getElementById('game').style.display = 'block';
+  loadQuestion(0);
+}
+
+function loadQuestion(idx) {
+  currentQ = idx;
+  revealed = false;
+  answers = {};
+  const q = QUESTIONS[idx];
+  const total = QUESTIONS.length;
+
+  document.getElementById('progress-bar').style.width = `${(idx/total)*100}%`;
+  document.getElementById('q-num').textContent = `Question ${idx+1} of ${total}`;
+
+  const diffEl = document.getElementById('q-diff');
+  diffEl.textContent = q.diff.toUpperCase();
+  diffEl.className = `q-diff diff-${q.diff}`;
+
+  document.getElementById('question-text').textContent = q.q;
+
+  const grid = document.getElementById('options-grid');
+  const letters = ['A','B','C','D'];
+  grid.innerHTML = q.options.map((opt, i) =>
+    `<div class="option" id="opt-${i}">
+      <span class="option-letter">${letters[i]}</span>
+      <span>${opt}</span>
+    </div>`
+  ).join('');
+
+  document.getElementById('answer-reveal').style.display = 'none';
+  document.getElementById('reveal-btn').style.display = '';
+  document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('answer-list').innerHTML = '';
+  document.getElementById('stat-answered').textContent = '0';
+  document.getElementById('stat-correct').textContent = '—';
+
+  update(gameRef, { currentQ: idx, status: "playing", questionOpenAt: Date.now() });
+  listenAnswers();
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = TIMER_SECS;
+  const bar = document.getElementById('timer-bar');
+  const timerEl = document.getElementById('timer');
+  bar.style.width = '100%';
+  bar.style.background = '#27ae60';
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    timerEl.textContent = timeLeft;
+    const pct = (timeLeft / TIMER_SECS) * 100;
+    bar.style.width = pct + '%';
+    if (timeLeft <= 5) { bar.style.background = '#e74c3c'; timerEl.className = 'timer urgent'; }
+    else if (timeLeft <= 10) { bar.style.background = '#f39c12'; timerEl.className = 'timer warning'; }
+    if (timeLeft <= 0) { clearInterval(timerInterval); timerEl.textContent = '0'; }
+  }, 1000);
+}
+
+window.revealAnswer = function() {
+  clearInterval(timerInterval);
+  revealed = true;
+  const q = QUESTIONS[currentQ];
+
+  if (q.answer >= 0) {
+    document.getElementById(`opt-${q.answer}`).classList.add('correct');
+    // mark wrong options
+    q.options.forEach((_, i) => { if (i !== q.answer) document.getElementById(`opt-${i}`).classList.add('wrong'); });
+  }
+
+  const revealBox = document.getElementById('answer-reveal');
+  const revealText = document.getElementById('answer-reveal-text');
+  if (q.note) {
+    revealText.textContent = q.note;
+  } else if (q.answer >= 0) {
+    revealText.textContent = `${['A','B','C','D'][q.answer]}: ${q.options[q.answer]}`;
+  }
+  revealBox.style.display = 'block';
+
+  // Count correct answers & award points
+  let correctCount = 0;
+  const playerUpdates = {};
+  Object.entries(answers).forEach(([uid, ans]) => {
+    const isCorrect = (q.answer === -1) || (ans.choice === q.answer);
+    if (isCorrect) {
+      correctCount++;
+      const speed = Math.max(0, TIMER_SECS - (ans.timeTaken || TIMER_SECS));
+      const pts = 100 + Math.round(speed * 5);
+      playerUpdates[`players/${uid}/score`] = (players[uid]?.score || 0) + pts;
+    }
+  });
+  document.getElementById('stat-correct').textContent = correctCount;
+  if (Object.keys(playerUpdates).length) update(gameRef, playerUpdates);
+
+  document.getElementById('reveal-btn').style.display = 'none';
+  document.getElementById('next-btn').style.display = currentQ < QUESTIONS.length - 1 ? '' : 'none';
+  update(gameRef, { status: "revealed", correctAnswer: q.answer });
+}
+
+window.nextQuestion = function() {
+  if (currentQ < QUESTIONS.length - 1) loadQuestion(currentQ + 1);
+  else endGame();
+}
+
+window.showLeaderboard = function() {
+  document.getElementById('game').style.display = 'none';
+  document.getElementById('leaderboard').style.display = 'block';
+  const title = currentQ >= QUESTIONS.length - 1 ? 'FINAL SCORES' : 'LEADERBOARD';
+  document.getElementById('lb-title').textContent = title;
+  document.getElementById('resume-btn').style.display = currentQ >= QUESTIONS.length - 1 ? 'none' : '';
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const sorted = Object.values(players).sort((a,b) => (b.score||0)-(a.score||0));
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('lb-list').innerHTML = sorted.map((p,i) =>
+    `<div class="lb-row" style="animation-delay:${i*0.08}s">
+      <div class="lb-rank">${medals[i] || i+1}</div>
+      <div class="lb-name">${p.name}</div>
+      <div class="lb-score">${p.score || 0}</div>
+    </div>`
+  ).join('');
+}
+
+window.resumeGame = function() {
+  document.getElementById('leaderboard').style.display = 'none';
+  document.getElementById('game').style.display = 'block';
+}
+
+window.endGame = async function() {
+  clearInterval(timerInterval);
+  await update(gameRef, { status: "ended" });
+  document.getElementById('resume-btn').style.display = 'none';
+  showLeaderboard();
+}
+
+init();
+</script>
+</body>
+</html>
