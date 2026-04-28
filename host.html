@@ -273,7 +273,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getDatabase, ref, set, get, onValue, update, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD8NfUr1f0Q7DezcmqC-X29KSLj21R3F5Q",
+  apiKey: "AIzaSyCb8eZ9utjASUTzuKF3ASGy08yQ0thnNJQ",
   authDomain: "cs50-quiz-2ef04.firebaseapp.com",
   databaseURL: "https://cs50-quiz-2ef04-default-rtdb.firebaseio.com",
   projectId: "cs50-quiz-2ef04",
@@ -302,7 +302,6 @@ const QUESTIONS = [
   { diff: "easy", q: "Which of the following languages uses % to represent the modulus operator?", options: ["C","Python","JavaScript","All of the above"], answer: 3 },
   { diff: "easy", q: "What does HTML stand for?", options: ["Hyperlinks and Text Markup Language","HyperText Markup Language","Home Tool Markup Language","HyperText Machine Language"], answer: 1 },
   { diff: "easy", q: "Which of the following SQL clauses is used to filter rows returned by a query?", options: ["ORDER BY","WHERE","GROUP BY","HAVING"], answer: 1 },
-  { diff: "easy", q: "Which of the following is the correct CSS syntax to change the background color of a webpage body to black?", options: ["body {background-color: black;}","body {color: black;}","<body style=\"background: black;\">","background-color: black;"], answer: 0 },
   { diff: "easy", q: "What does DNS do?", options: ["It styles web pages","It maps domain names to IP addresses","It stores passwords","It compiles C code"], answer: 1 },
   { diff: "easy", q: "How many unique values can a single byte represent?", options: ["256","255","8","1000"], answer: 0 },
   { diff: "easy", q: "In which programming language can you use pointers and memory management functions like malloc() and calloc()?", options: ["C","Python","SQL","HTML/CSS/JavaScript"], answer: 0 },
@@ -315,8 +314,6 @@ const QUESTIONS = [
   { diff: "medium", q: "Why can a memory leak become serious in a long-running program?", options: ["It creates an infinite loop that crashes the computer","Unused allocated memory is not released, reducing available memory over time","It causes variables to become constants","It immediately doubles available memory"], answer: 1 },
   { diff: "medium", q: "When seeding a hash function, which number from the list is the best seed and why?", options: ["25","97 — it's a prime number","48","69"], answer: 1 },
   { diff: "medium", q: "What happens if you forget to free memory allocated with malloc in C?", options: ["It can cause a memory leak, using more memory over time","The program will not compile","The program automatically frees it at end of each function","It will immediately crash"], answer: 0 },
-  { diff: "medium", q: "Which line would create a numbered list in HTML?", options: ["<ul><li>text</li></ul>","<al><li>text</li></al>","<ol><li>text</li></ol>","<href><a>text</a></href>"], answer: 2 },
-  { diff: "medium", q: "What is the primary difference between compiled and interpreted languages?", options: ["Compiled languages execute directly with no translation","Compiled languages are translated into machine code before execution; interpreted languages are read and executed at runtime","Compiled languages are always slower","Both require an interpreter"], answer: 1 },
   { diff: "medium", q: "This hexadecimal value #DC143C represents primarily what color?", options: ["Blue","Red","Green","Other"], answer: 1 },
   { diff: "medium", q: "What is the time complexity of binary search?", options: ["O(n)","O(log n)","O(n log n)","O(1)"], answer: 1 },
   { diff: "medium", q: "Which data structure operates on a Last-In, First-Out (LIFO) principle?", options: ["Queue","Hash Table","Stack","Linked List"], answer: 2 },
@@ -328,8 +325,6 @@ const QUESTIONS = [
   { diff: "hard", q: "What is the consequence of not calling free() after manually allocating memory in C?", options: ["Segmentation fault","Integer Overflow","Stack Overflow","Memory Leak"], answer: 3 },
   { diff: "hard", q: "In SQL, what is the main difference between a WHERE clause and a HAVING clause?", options: ["WHERE filters rows before grouping; HAVING filters after aggregation","WHERE is used only with JOINs","WHERE filters aggregated results","There is no difference"], answer: 0 },
   { diff: "hard", q: "Which of these lines of C code is formatted/syntactically correct?", options: ["for(int i=1; i<args; i++){printf(\"%c\", topper(args[I][0])}","for(int i=1; i<args; i++){print(\"%c\", topper(args[I][0]);}","for(int i=1; i<args; i++){printf(\"%c\", topper(args[I][0]);","for(int i=1; i<argc; i++){printf(\"%c\", topper(args[I][0]);}"], answer: 3 },
-  { diff: "hard", q: "How is strlen() actually implemented in C?", options: ["Loops through the string looking for \\0 while counting","Divides total memory by sizeof(char)","Counts total bytes pointed to by char* minus '\\0'","Returns a built-in length attribute of char*"], answer: 0 },
-  { diff: "hard", q: "What is the Big O of searching in an unbalanced binary search tree?", options: ["O(n)","O(log n)","O(n log n)","O(n²)"], answer: 0 },
   { diff: "hard", q: "What is the result of this C code?\nint *x;\n*x = 10;\nprintf(\"%i\", *x);", options: ["10","Null","Garbage Value","Segmentation Fault"], answer: 3 },
   { diff: "hard", q: "In C, what is the key difference between char *s = \"hello\"; and char s[] = \"hello\";?", options: ["There is no difference","The first creates a pointer to a string literal; the second creates a modifiable array","The first stores the string on the heap; the second on the stack","The second cannot be used as a string"], answer: 1 },
   { diff: "hard", q: "What is the correct sequence of steps in the C compiling process?", options: ["preprocessing → assembling → linking → compiling","compiling → linking → preprocessing → assembling","preprocessing → compiling → assembling → linking","compiling → assembling → preprocessing → linking"], answer: 2 },
